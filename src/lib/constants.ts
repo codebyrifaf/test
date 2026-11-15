@@ -33,3 +33,10 @@ export const WEB_ANSWER_PREFIX = "[web] ";
  * from teachers). The viewer removes it, shows a badge and colours it blue.
  */
 export const MADE_UP_ANSWER_PREFIX = "[made-up] ";
+/**
+ * Marker before an honest reply to a question that needs a specific fact the
+ * memory does not have (for example relatives in the UK or a test score): it
+ * never invents the fact. The viewer removes it, shows a badge asking the
+ * reader to say the real fact, and colours it red.
+ */
+export const HONEST_ANSWER_PREFIX = "[check] ";

@@ -5,6 +5,9 @@ import {
   buildSystemPrompt,
   buildWebSystemPrompt,
   buildMadeUpSystemPrompt,
+  buildHonestSystemPrompt,
+  honestRequest,
+  HONEST_FALLBACK,
   madeUpRequest,
   NOT_IN_MEMORY,
   LOOKUP_RULES,
@@ -144,11 +147,13 @@ test("if the extension fails, the complete original answer is kept", async () =>
   assert.equal(await run.result, "A short but complete answer.");
 });
 
-test("Not in memory output is normalized exactly", async () => {
+test("Not in memory is never published: when every step gives nothing, the honest fallback is shown", async () => {
   for (const output of ["not in ", "Not in memory.", "NOT IN MEMORY!"]) {
     const parts = output === "not in " ? ["not in ", "memory."] : [output];
     const run = answer("What is your favourite film?", engine(chunks(...parts)));
-    assert.equal(await run.result, NOT_IN_MEMORY);
+    const seen = visibleTexts(run);
+    assert.equal(await run.result, `[check] ${HONEST_FALLBACK}`);
+    for (const text of seen) assert.doesNotMatch(text, /not in memory/i);
   }
 });
 
@@ -352,42 +357,64 @@ test("a question the memory answers is never searched", async () => {
   assert.equal(searched, false);
 });
 
-test("a personal question missing from memory is not searched", async () => {
+const HONEST = `I'd rather give you the exact detail on that than guess. What I can say is that my father is my sponsor and my plan is to return to Bangladesh after my MSc. ${LONG_ENOUGH}`;
+
+test("a fact about you missing from memory gets an honest reply: never searched, never invented", async () => {
   let searched = false;
   const prompts: AnswerPrompt[] = [];
   const run = answer(
     "Do you have relatives in the UK?",
-    engine(sequence(["Not in memory", "PERSONAL"], prompts), MEMORY, async () => {
+    engine(sequence(["Not in memory", "PERSONAL", HONEST], prompts), MEMORY, async () => {
       searched = true;
       return [SOURCE];
     }),
   );
   const seen = visibleTexts(run);
-  assert.equal(await run.result, NOT_IN_MEMORY);
+  assert.equal(await run.result, `[check] ${HONEST}`);
   assert.equal(searched, false);
-  assert.equal(prompts.length, 2);
-  assert.deepEqual(seen, [NOT_IN_MEMORY]);
+  assert.equal(prompts.length, 3);
+  assert.equal(prompts[2].system, buildHonestSystemPrompt({ memory: MEMORY }));
+  assert.equal(prompts[2].content, honestRequest("Do you have relatives in the UK?", "short"));
+  // The memory step's "Not in memory" never reached the viewer.
+  assert.ok(seen.length > 0 && seen.every((text) => text.startsWith("[check] ")));
 });
 
-test("no web results, or results that do not answer it, give Not in memory without a web marker", async () => {
+test("no web results, or results that do not answer it, give an honest reply without a web marker", async () => {
   const empty = answer(
     "Who designed the campus library?",
     engine(
-      sequence(["Not in memory", "SEARCH: campus library architect"]),
+      sequence(["Not in memory", "SEARCH: campus library architect", HONEST]),
       MEMORY,
       async () => [],
     ),
   );
-  assert.equal(await empty.result, NOT_IN_MEMORY);
+  assert.equal(await empty.result, `[check] ${HONEST}`);
+  // Web step and its second opinion both refuse, then the honest reply.
+  const prompts: AnswerPrompt[] = [];
   const unanswered = answer(
     "Who designed the campus library?",
     engine(
-      sequence(["Not in memory", "SEARCH: campus library architect", "Not in memory."]),
+      sequence(
+        ["Not in memory", "SEARCH: campus library architect", "Not in memory.", "Not in memory", HONEST],
+        prompts,
+      ),
       MEMORY,
       async () => [SOURCE],
     ),
   );
-  assert.equal(await unanswered.result, NOT_IN_MEMORY);
+  assert.equal(await unanswered.result, `[check] ${HONEST}`);
+  assert.equal(prompts[4].system, buildHonestSystemPrompt({ memory: MEMORY }));
+});
+
+test("the honest rules never invent or imply the missing fact and never offer Not in memory", () => {
+  const honest = buildHonestSystemPrompt({ memory: "facts" });
+  assert.match(honest, /Never guess, invent or imply it, and never answer yes or no to it/);
+  assert.match(honest, /rather give the exact detail than guess/);
+  assert.match(honest, /Use only facts from MEMORY, exactly as MEMORY states them/);
+  assert.doesNotMatch(honest, /Not in memory/);
+  assert.ok(honest.endsWith("MEMORY:\n<<<\nfacts\n>>>"));
+  assert.match(honestRequest("Q?", "short"), /QUESTION: Q\?\n\nMEMORY does not give the specific fact.*never answer yes or no to it\.$/);
+  assert.doesNotMatch(HONEST_FALLBACK, /not in memory/i);
 });
 
 test("search queries are limited to three short items, with the question as a fallback", () => {
@@ -410,12 +437,14 @@ test("the rules keep personal facts to memory, let memory win, and never search 
   // Queries are short topic names, and the examples include a personal question.
   assert.match(LOOKUP_RULES, /only the name of the topic/);
   assert.match(LOOKUP_RULES, /Do you have relatives in the UK\? → PERSONAL/);
-  assert.match(LOOKUP_RULES, /checkable fact about the applicant .* reply exactly: PERSONAL/);
+  assert.match(LOOKUP_RULES, /fact about the applicant that would appear in their documents or records .* reply exactly: PERSONAL/);
   assert.match(
     LOOKUP_RULES,
     /Queries must never contain the applicant's name or other personal details/,
   );
-  assert.match(LOOKUP_RULES, /If unsure, reply exactly: PERSONAL/);
+  // Unsure questions get a general made-up answer, never Not in memory.
+  assert.match(LOOKUP_RULES, /If unsure, reply exactly: REFLECTIVE/);
+  assert.match(LOOKUP_RULES, /What do you do in your free time\? → REFLECTIVE/);
 });
 
 test("the lookup separates checkable facts (Not in memory) from soft questions (made up)", () => {
@@ -432,6 +461,19 @@ test("the lookup separates checkable facts (Not in memory) from soft questions (
   assert.match(madeUp, /Never invent names, places, dates, years, numbers, grades, scores, awards/);
   assert.match(madeUp, /never claim anything that could be checked in documents/);
   assert.match(madeUp, /Never mention MEMORY, that the answer is made up/);
+  // Hypotheticals are answered with what is in place, never a new source of help.
+  assert.match(madeUp, /hypothetical QUESTION .* Never invent a new sponsor, relative, job, loan, amount/);
+  // No "Not in memory" option here: it made the model refuse hypotheticals.
+  assert.match(madeUp, /Always give an answer, even when MEMORY says nothing about the situation/);
+  assert.doesNotMatch(madeUp, /Not in memory/);
+  // The memory rules still keep the length exception.
+  assert.match(buildSystemPrompt({ memory: "facts" }), /The only exception to the length is the exact reply Not in memory\./);
+  // The memory rules answer a hypothetical from the facts that bear on it.
+  assert.match(
+    buildSystemPrompt({ memory: "facts" }),
+    /hypothetical QUESTION about you .* answered from the facts in MEMORY that bear on it/,
+  );
+  assert.match(LOOKUP_RULES, /what would happen in a hypothetical situation\), reply exactly: REFLECTIVE/);
   assert.ok(madeUp.endsWith("MEMORY:\n<<<\nfacts\n>>>"));
   assert.match(madeUpRequest("Q?", "short"), /QUESTION: Q\?\n\nMEMORY does not answer this QUESTION.*Keep it general/);
 });
@@ -458,14 +500,28 @@ test("a soft question missing from memory gets a general made-up answer, marked 
   assert.ok(seen.length > 0 && seen.every((text) => text.startsWith("[made-up] ")));
 });
 
-test("a made-up step that needs a checkable fact still gives Not in memory", async () => {
+test("a made-up step that refuses gets one second opinion, then an honest reply", async () => {
+  const prompts: AnswerPrompt[] = [];
+  const recovered = answer(
+    "What will you do if your visa is refused?",
+    engine(sequence(["Not in memory", "REFLECTIVE", "Not in memory", LONG_ENOUGH], prompts)),
+  );
+  const shown = visibleTexts(recovered);
+  assert.equal(await recovered.result, `[made-up] ${LONG_ENOUGH}`);
+  assert.equal(prompts[2].preferBackup, undefined);
+  assert.equal(prompts[3].preferBackup, true);
+  assert.equal(prompts[3].system, prompts[2].system);
+  for (const text of shown) assert.doesNotMatch(text, /Not in memory/);
+
   const run = answer(
     "How did your teachers help you in Class 10?",
     engine(sequence(["Not in memory", "REFLECTIVE", "Not in memory"])),
   );
   const seen = visibleTexts(run);
-  assert.equal(await run.result, NOT_IN_MEMORY);
-  assert.deepEqual(seen, [NOT_IN_MEMORY]);
+  // Made-up step and second opinion refuse, then the honest step refuses
+  // twice too: the fixed honest fallback, never "Not in memory".
+  assert.equal(await run.result, `[check] ${HONEST_FALLBACK}`);
+  assert.deepEqual(seen, [`[check] ${HONEST_FALLBACK}`]);
 });
 
 test("a short memory answer to a soft question gets general made-up points added and marked", async () => {

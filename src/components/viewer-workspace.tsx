@@ -36,9 +36,10 @@ export function ViewerWorkspace() {
   const [fullscreen, setFullscreen] = useState(false);
   const [notice, setNotice] = useState("");
   const display = useRef<HTMLDivElement>(null);
-  // Text from the internet or made up is marked: at the start (the whole
-  // answer) or after the memory part (added to a short memory answer). The
-  // marker is replaced by a badge and coloured text (amber web, blue made up).
+  // Text not from the memory is marked: at the start (the whole answer) or
+  // after the memory part (added to a short memory answer). The marker is
+  // replaced by a badge and coloured text: amber from the internet, blue made
+  // up, red an honest reply where a fact about you is missing.
   const { text: shownText, marked } = readAnswerMarker(playback?.answer.text ?? "");
   const badge = !marked
     ? ""
@@ -46,9 +47,16 @@ export function ViewerWorkspace() {
       ? marked.from === 0
         ? "From the internet — not from your memory"
         : "Amber part is from the internet — not from your memory"
-      : marked.from === 0
-        ? "Made up — not from your memory"
-        : "Blue part is made up — not from your memory";
+      : marked.source === "made-up"
+        ? marked.from === 0
+          ? "Made up — not from your memory"
+          : "Blue part is made up — not from your memory"
+        : "This fact is missing from your memory — say the real answer yourself";
+  const markStyle = {
+    web: "border-amber-300/40 bg-amber-300/10 text-amber-200",
+    "made-up": "border-sky-300/40 bg-sky-300/10 text-sky-200",
+    honest: "border-rose-300/40 bg-rose-300/10 text-rose-200",
+  } as const;
   useEffect(() => {
     let disposed = false;
     let source: EventSource | undefined;
@@ -320,12 +328,8 @@ export function ViewerWorkspace() {
           <>
             {marked && (
               <span
-                className={`absolute top-4 left-4 rounded-full border px-3 py-1 text-xs font-semibold ${
-                  marked.source === "web"
-                    ? "border-amber-300/40 bg-amber-300/10 text-amber-200"
-                    : "border-sky-300/40 bg-sky-300/10 text-sky-200"
-                }`}
-                data-testid={marked.source === "web" ? "web-answer-badge" : "made-up-answer-badge"}
+                className={`absolute top-4 left-4 rounded-full border px-3 py-1 text-xs font-semibold ${markStyle[marked.source]}`}
+                data-testid={`${marked.source}-answer-badge`}
               >
                 {badge}
               </span>

@@ -1,17 +1,22 @@
-import { MADE_UP_ANSWER_PREFIX, WEB_ANSWER_PREFIX } from "@/lib/constants";
+import {
+  HONEST_ANSWER_PREFIX,
+  MADE_UP_ANSWER_PREFIX,
+  WEB_ANSWER_PREFIX,
+} from "@/lib/constants";
 
 /** Where the text of a marked answer part came from. */
-export type MarkedSource = "web" | "made-up";
+export type MarkedSource = "web" | "made-up" | "honest";
 
 const MARKERS: [MarkedSource, string][] = [
   ["web", WEB_ANSWER_PREFIX],
   ["made-up", MADE_UP_ANSWER_PREFIX],
+  ["honest", HONEST_ANSWER_PREFIX],
 ];
 
 /**
  * Reads an answer as published: the text to show (without the marker) and,
- * when part of it is from the internet or made up, where that part starts
- * (0 = the whole answer). An answer has at most one marker.
+ * when part of it is not from the memory, where that part starts (0 = the
+ * whole answer). An answer has at most one marker.
  */
 export function readAnswerMarker(answer: string): {
   text: string;

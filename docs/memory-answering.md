@@ -141,3 +141,29 @@ Limitations:
 - A made-up answer is not true information about the applicant. It is marked so the reader can stay general and careful with follow-up questions, because interviewers compare answers with documents and earlier answers.
 - Answers that need the lookup step (made up, web, or “Not in memory” for a question the memory does not cover) start later than memory answers: about 3–5 s normally, and 7–12 s when Gemini is slow, as on 13 November.
 - The PERSONAL/REFLECTIVE choice is made by the small model; borderline questions can fall either way. When unsure it chooses PERSONAL (“Not in memory”).
+
+## Hypothetical questions — 16 November 2026
+
+The owner reported “What would happen if your parents suddenly could not support you financially?” answered “Not in memory”. Trace: the memory step refused (a hypothetical is not stated in the memory), the lookup step correctly chose `REFLECTIVE`, and the made-up step then also replied “Not in memory”, taking the escape its rules offered.
+
+Changes:
+
+1. Memory rules: a hypothetical question about the applicant is answered from the memory facts that bear on it (money already saved, fees already paid, plans already made), never with an invented plan, person, job or amount. The reported question is now answered from the memory (savings of about 32 lakh taka, about £19,400; 70% of the tuition already paid; no loan).
+2. Lookup rules: hypotheticals (“what would you do / what would happen if…”) are listed as `REFLECTIVE`, with an example worded differently from the reported question; “How much money is in your sponsor's account?” is an example of `PERSONAL`.
+3. Made-up rules: for a hypothetical, say what is already in place and how you would sensibly deal with it, never a new sponsor, relative, job, loan or amount. The “Not in memory” option was removed from these rules (and the length rule's “Not in memory” exception is left out of them): an isolation test showed the option alone made the model refuse “What will you do if your visa is refused?”, while the same rules without it answered sensibly. Checkable facts about the applicant are still filtered out by the lookup step before this.
+4. A made-up step that still refuses gets one second opinion, backup model first (as the web step already did); only if both refuse is the answer “Not in memory”.
+
+Live results (owner's memory, 16 November): the parents question answered from the memory 3 of 3 times (figures checked against the memory); “What will you do if your visa is refused?” made up 3 of 3 times (read the refusal notice, fix issues, reapply, ask the university); “What will you do if you feel homesick?” made up; “What would you do if you failed a module?” made up using the memory's resit rules; “What is your height?”, “What grade did you get in your HSC English exam?” and “Do you have any relatives in the UK?” stayed “Not in memory”.
+
+## Never “Not in memory” — 16 November 2026
+
+The owner asked that “Not in memory” is never shown and every question is answered, with something made up and trustworthy when the memory does not have it.
+
+Implemented, with one deliberate limit:
+
+- Everything about the applicant without a fixed record (hobbies, preferences, personality, habits, opinions, hypotheticals, reasons) gets a general made-up answer (blue). The lookup step now chooses this when unsure, and the made-up rules never say whether a records-type fact is true.
+- A fact about the applicant that would be in their documents or records (family or relatives, visa or travel history, refusals, money amounts, grades or test scores, dates, names, jobs, address, age or height) is **not** invented when it is missing from the memory. Read aloud in a credibility interview, an invented fact of this kind would be a false statement that can be checked against documents and records, risking a refusal for deception. These questions get an honest reply instead (`HONEST_FACTS`, `honestRequest`): a calm sentence that the applicant would rather give the exact detail than guess, then the most relevant true facts from the memory, never a yes or no to the missing fact. It is marked `[check] `, shown in red with the badge “This fact is missing from your memory — say the real answer yourself”. The lasting fix is to add such facts to the memory.
+- The same honest reply is used when a general fact is not found on the web, and when the web or made-up step still refuses after its second opinion. If the honest step itself gives nothing (twice), a fixed sentence (`HONEST_FALLBACK`) is used. An empty reply counts as a refusal.
+- “Not in memory” is now published only when the memory is empty (no Gemini request is made then).
+
+Live results (owner's memory, 16 November): relatives in the UK and height got honest replies (no invented fact, then study plan, sponsor and return home); “What do you do in your free time?” and “What was your IELTS score?” came from the memory; “What is your favourite food?” was made up; “Who designed the main library at the University of Leicester?” found nothing on the web and got an honest reply (8.3 s); the parents question came from the memory. No answer said “Not in memory”.

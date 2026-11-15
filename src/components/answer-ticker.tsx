@@ -2,6 +2,13 @@
 import { useEffect, useRef } from "react";
 import type { MarkedSource } from "@/lib/answer-marker";
 
+/** Amber from the internet, blue made up, red an honest reply (fact missing). */
+const MARK_COLOURS: Record<MarkedSource, string> = {
+  web: "text-amber-200",
+  "made-up": "text-sky-300",
+  honest: "text-rose-300",
+};
+
 export function AnswerTicker({
   text,
   playbackKey,
@@ -15,7 +22,7 @@ export function AnswerTicker({
   speed: number;
   /** False while the answer is still arriving; the pass cannot finish yet. */
   final: boolean;
-  /** Where text not from the memory starts (0 = all of it): web amber, made up blue. */
+  /** Where text not from the memory starts (0 = all of it); see MARK_COLOURS. */
   marked?: { source: MarkedSource; from: number };
   onComplete: () => void;
 }) {
@@ -88,8 +95,8 @@ export function AnswerTicker({
           <>
             {text.slice(0, marked.from)}
             <span
-              className={marked.source === "web" ? "text-amber-200" : "text-sky-300"}
-              data-testid={marked.source === "web" ? "web-answer-text" : "made-up-answer-text"}
+              className={MARK_COLOURS[marked.source]}
+              data-testid={`${marked.source}-answer-text`}
             >
               {text.slice(marked.from)}
             </span>
