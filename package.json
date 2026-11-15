@@ -1,0 +1,41 @@
+{
+  "name": "ukvi",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "npm run test:supabase && npm run test:application && npm run test:database && npm run test:sessions",
+    "test:application": "node --conditions=react-server --import tsx --test tests/pipeline.test.ts tests/provider-request.test.ts tests/provider-failover.test.ts tests/validation.test.ts tests/availability.test.ts tests/termination.test.ts tests/web-search.test.ts tests/answer-marker.test.ts",
+    "test:sessions": "node --test tests/application-database.test.mjs",
+    "test:supabase": "node --conditions=react-server --import tsx --test tests/supabase.test.ts",
+    "test:database": "node --test tests/database.test.mjs",
+    "verify:server-boundary": "node scripts/verify-server-boundary.mjs",
+    "verify:client-secrets": "node scripts/verify-client-secrets.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "2.32.0",
+    "@supabase/supabase-js": "2.118.0",
+    "next": "16.4.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "@electric-sql/pglite-pgvector": "0.0.16",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.5",
+    "supabase": "3.0.0",
+    "tailwindcss": "^4",
+    "tsx": "4.23.15",
+    "typescript": "^5"
+  }
+}

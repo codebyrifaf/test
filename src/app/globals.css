@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #0a0d14;
+  --foreground: #f0f2f8;
+  --surface: #111620;
+  --muted: #9aa7bc;
+  --line: #252e3e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 5px;
+}
+::selection {
+  background: #564789;
+  color: white;
+}
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+textarea {
+  resize: vertical;
+}
+
+@layer components {
+  .sidebar {
+    @apply flex flex-col border-b border-line bg-[#0d111a] lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:border-r lg:border-b-0;
+  }
+  .nav-link {
+    @apply flex min-h-11 min-w-0 shrink-0 items-center gap-2 rounded-lg px-2.5 py-2.5 text-xs font-medium text-muted hover:bg-white/5 hover:text-foreground sm:gap-3 sm:px-3 sm:text-sm;
+  }
+  .nav-link[aria-current="page"] {
+    @apply bg-violet-400/10 text-violet-200;
+  }
+  .nav-link[aria-current="page"][data-role="viewer"] {
+    @apply bg-teal-400/10 text-teal-200;
+  }
+  .panel {
+    @apply rounded-2xl border border-line bg-surface p-5 sm:p-6;
+  }
+  .notice {
+    @apply flex items-start gap-3 rounded-xl border border-violet-300/15 bg-violet-300/5 px-4 py-3.5 text-sm leading-6 text-muted;
+  }
+  .notice strong {
+    @apply font-medium text-violet-200;
+  }
+  .section-heading {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-2;
+  }
+  .section-heading h2 {
+    @apply text-sm font-semibold tracking-wide;
+  }
+  .role-card {
+    @apply relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface p-6 sm:p-7;
+  }
+  .role-sender {
+    background-image: radial-gradient(
+      ellipse at 0% 0%,
+      #a78bfa0f,
+      transparent 65%
+    );
+  }
+  .role-viewer {
+    background-image: radial-gradient(
+      ellipse at 0% 0%,
+      #5eead40d,
+      transparent 65%
+    );
+  }
+  .role-icon {
+    @apply flex size-12 items-center justify-center rounded-xl border border-current/20 bg-current/5;
+  }
+  .role-label {
+    @apply rounded-full border border-current/20 bg-current/5 px-3 py-1 text-[11px] font-medium tracking-wide;
+  }
+  .feature-list {
+    @apply mt-6 space-y-3 text-sm text-muted;
+  }
+  .feature-list li {
+    @apply flex items-center gap-2.5;
+  }
+  .feature-list svg {
+    @apply size-4 shrink-0 text-violet-300;
+  }
+  .button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold;
+  }
+  .button svg {
+    @apply size-4;
+  }
+  .button-sender {
+    @apply border-violet-400/25 bg-violet-400/15 text-violet-200;
+  }
+  .button-viewer {
+    @apply border-teal-400/25 bg-teal-400/10 text-teal-200;
+  }
+  .button:disabled {
+    @apply border-dashed;
+  }
+  .preview-link {
+    @apply mt-2 flex min-h-11 items-center justify-center gap-2 rounded-lg text-xs font-medium hover:bg-white/5;
+  }
+  .preview-link svg {
+    @apply size-3.5;
+  }
+  .field-label {
+    @apply block text-sm font-medium;
+  }
+  .control-note {
+    @apply text-xs leading-5 text-muted;
+  }
+  .text-input {
+    @apply min-h-12 w-full rounded-lg border border-line bg-background px-3.5 py-3 text-sm text-foreground placeholder:text-[#8794aa] disabled:text-muted;
+  }
+  .detail-label {
+    @apply text-xs text-muted;
+  }
+  .detail-value {
+    @apply mt-2 text-sm font-medium;
+  }
+  .status-row {
+    @apply flex items-center justify-between gap-3 border-b border-line py-4 text-xs last:border-0;
+  }
+  .status-row dt {
+    @apply text-muted;
+  }
+  .status-row dd {
+    @apply text-right;
+  }
+  .status-badge {
+    @apply inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-line bg-white/[0.025] px-3 py-1.5 text-xs text-muted;
+  }
+  .skip-link {
+    @apply fixed top-3 left-3 z-50 -translate-y-24 rounded-lg bg-violet-200 px-4 py-3 font-semibold text-slate-950 focus:translate-y-0;
+  }
+}
+
+input[type="range"] {
+  accent-color: #5eead4;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
